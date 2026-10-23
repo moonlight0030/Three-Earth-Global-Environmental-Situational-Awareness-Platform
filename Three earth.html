@@ -1,0 +1,1572 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ThreeEarth · 全球环境态势感知平台</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', 'Inter', 'Arial', sans-serif;
+            background-color: black;
+        }
+        
+        /* 顶部标题 */
+        #info {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: rgba(255, 255, 255, 0.95);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 24px;
+            border-radius: 40px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(100, 180, 255, 0.2);
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-width: 80%;
+        }
+        #info h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 500;
+            letter-spacing: 4px;
+            text-shadow: 0 0 15px #00aaff;
+        }
+        #info p {
+            margin: 0;
+            font-size: 0.65rem;
+            opacity: 0.7;
+            color: #aad0ff;
+            line-height: 1.2;
+        }
+        #info .time-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2px;
+            font-size: 0.6rem;
+            opacity: 0.6;
+            color: #8ab4f8;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        #current-time {
+            font-family: 'Courier New', monospace;
+        }
+        #last-update {
+            font-family: 'Courier New', monospace;
+        }
+
+        /* 底部状态*/
+        #status-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+            pointer-events: none;
+            z-index: 10;
+            gap: 12px;
+        }
+        #data-sources {
+            color: rgba(200, 220, 255, 0.7);
+            background: rgba(10, 20, 40, 0.5);
+            padding: 8px 20px;
+            border-radius: 40px;
+            backdrop-filter: blur(8px);
+            font-size: 0.8rem;
+            border: 1px solid rgba(100, 180, 255, 0.25);
+            order: 1;
+        }
+        #legend {
+            display: flex;
+            gap: 20px;
+            background: rgba(10, 20, 40, 0.5);
+            padding: 8px 24px;
+            border-radius: 40px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(100, 180, 255, 0.25);
+            color: white;
+            font-size: 0.75rem;
+            transition: opacity 0.3s;
+            order: 3;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        /* 右侧详情卡片*/
+        #info-panel {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 340px;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(16px);
+            border-radius: 24px;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            pointer-events: auto;
+            z-index: 20;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+        #info-panel.collapsed {
+            width: 200px;
+            height: 60px;
+        }
+        #info-panel.collapsed .panel-body,
+        #info-panel.collapsed .panel-footer {
+            display: none;
+        }
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 18px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .panel-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .panel-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 400;
+            color: #c0ddff;
+        }
+        .panel-toggle {
+            background: none;
+            border: none;
+            color: #8ab4f8;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 20px;
+            transition: background 0.2s;
+        }
+        .panel-toggle:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .panel-body {
+            padding: 18px;
+            transition: opacity 0.2s;
+        }
+        #panel-content {
+            line-height: 1.55;
+            font-size: 0.9rem;
+            color: #ddd;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .panel-footer {
+            padding: 0 18px 18px 18px;
+        }
+        .panel-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 0.8rem;
+            color: #8ab4f8;
+        }
+        #panel-link {
+            color: #7ec8ff;
+            text-decoration: none;
+            border: 1px solid #3a6ea5;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            background: rgba(30, 80, 120, 0.25);
+            display: inline-block;
+        }
+
+        /* 侧边栏 - 可收起 */
+        #sidebar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 340px;
+            max-height: calc(100vh - 40px);
+            background: rgba(5, 10, 20, 0.5);
+            backdrop-filter: blur(16px) saturate(180%);
+            border-radius: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: white;
+            z-index: 30;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #sidebar.collapsed {
+            width: 60px;
+        }
+        #sidebar.collapsed .sidebar-content {
+            display: none;
+        }
+        #sidebar.collapsed .sidebar-header {
+            padding: 16px 12px;
+            justify-content: center;
+        }
+        #sidebar.collapsed .sidebar-header h2,
+        #sidebar.collapsed .sidebar-header .badge {
+            display: none;
+        }
+        
+        .sidebar-header {
+            padding: 20px 20px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .sidebar-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: #d0e5ff;
+        }
+        .badge {
+            background: #1e4d7b;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 0.65rem;
+            margin-left: 8px;
+        }
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: #8ab4f8;
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 20px;
+            margin-left: auto;
+            transition: background 0.2s;
+        }
+        .sidebar-toggle:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-content {
+            overflow-y: auto;
+            flex: 1;
+            scrollbar-width: thin;
+            transition: opacity 0.2s;
+        }
+        
+        .section {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #9dc6ff;
+        }
+        
+        /* 地震列表 */
+        .quake-item {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .quake-item:hover {
+            background: rgba(60, 120, 200, 0.15);
+        }
+        .quake-magnitude {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        .quake-location {
+            font-size: 0.85rem;
+            color: #e0e0e0;
+        }
+        .quake-time {
+            font-size: 0.7rem;
+            color: #7a9bcb;
+            margin-top: 2px;
+        }
+
+        /* 山火列表 */
+        .fire-item {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .fire-item:hover {
+            background: rgba(200, 100, 0, 0.15);
+        }
+        .fire-brightness {
+            color: #ff9966;
+        }
+
+        /* 空气质量卡片 */
+        .aqi-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .aqi-card {
+            background: rgba(0,0,0,0.25);
+            border-radius: 16px;
+            padding: 12px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .aqi-card:hover {
+            background: rgba(60, 120, 200, 0.2);
+        }
+        .aqi-value {
+            font-size: 1.4rem;
+            font-weight: 300;
+        }
+        .aqi-label {
+            font-size: 0.65rem;
+            color: #8fb5e8;
+        }
+
+        /* 新闻列表 */
+        .news-item-sidebar {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .news-item-sidebar:hover {
+            background: rgba(60, 120, 200, 0.15);
+        }
+        .news-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .news-tag-btn {
+            border: 1px solid rgba(138, 180, 248, 0.35);
+            background: rgba(20, 40, 70, 0.55);
+            color: #a8c8ff;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            padding: 3px 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .news-tag-btn:hover {
+            background: rgba(40, 80, 130, 0.65);
+            color: #d9e9ff;
+        }
+        .news-tag-btn.active {
+            background: rgba(80, 150, 230, 0.28);
+            color: #ffffff;
+            border-color: rgba(150, 210, 255, 0.8);
+        }
+        .news-tag-chip {
+            display: inline-block;
+            margin-right: 6px;
+            padding: 1px 7px;
+            border-radius: 999px;
+            font-size: 0.64rem;
+            background: rgba(70, 130, 190, 0.35);
+            border: 1px solid rgba(140, 200, 255, 0.5);
+            color: #cfe7ff;
+            vertical-align: middle;
+        }
+        .news-country {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-left: 6px;
+            color: #8ab4f8;
+        }
+
+        /* 控制按钮*/
+        .control-group {
+            position: absolute;
+            top: 120px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 25;
+            transition: left 0.3s;
+            align-items: flex-start;
+        }
+        /* 确保侧边栏展开时控制组仍在左侧 */
+        #sidebar ~ .control-group {
+            left: 20px;
+        }
+        .btn {
+            background: rgba(0,40,80,0.7);
+            backdrop-filter: blur(8px);
+            color: #8ecae6;
+            border: 1px solid #3a6ea5;
+            padding: 8px 16px;
+            border-radius: 32px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .btn:hover {
+            background: #1a4a7a;
+            color: white;
+            box-shadow: 0 0 10px rgba(142, 202, 230, 0.4);
+            transform: translateY(-1px);
+        }
+        .btn-icon {
+            padding: 8px 12px;
+            min-width: 36px;
+            justify-content: center;
+        }
+        .btn-primary {
+            background: rgba(30, 80, 130, 0.8);
+            border-color: #4a8bc5;
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            background: #2a5c8a;
+            box-shadow: 0 0 12px rgba(142, 20, 230, 0.6);
+        }
+        .btn-group {
+            display: flex;
+            gap: 4px;
+            background: rgba(0, 20, 40, 0.5);
+            border-radius: 32px;
+            padding: 4px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(58, 110, 165, 0.3);
+        }
+        .btn-group .btn {
+            border-radius: 36px;
+            border: none;
+            background: transparent;
+            color: #8ecae6;
+        }
+        .btn-group .btn:hover {
+            background: rgba(26, 74, 122, 0.6);
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            background: rgba(0,0,0,0.6);
+            padding: 16px 32px;
+            border-radius: 40px;
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        /* 收起状态下的控制组位置调整 */
+        #sidebar.collapsed ~ .control-group {
+            left: 20px;
+        }
+
+        /* 底部状态栏 */
+        #status-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+            pointer-events: none;
+            z-index: 20;
+            gap: 12px;
+        }
+        #data-sources {
+            color: rgba(200, 220, 255, 0.7);
+            background: rgba(10, 20, 40, 0.5);
+            padding: 10px 24px;
+            border-radius: 40px;
+            backdrop-filter: blur(8px);
+            font-size: 0.8rem;
+            border: 1px solid rgba(100, 180, 255, 0.25);
+            flex-shrink: 0;
+        }
+        #data-stats {
+            color: rgba(200, 220, 255, 0.7);
+            background: rgba(10, 20, 40, 0.5);
+            padding: 10px 24px;
+            border-radius: 40px;
+            backdrop-filter: blur(8px);
+            font-size: 0.8rem;
+            border: 1px solid rgba(100, 180, 255, 0.25);
+            flex-shrink: 0;
+            display: flex;
+            gap: 16px;
+            order: 2;
+        }
+        #legend {
+            display: flex;
+            gap: 16px;
+            background: rgba(10, 20, 40, 0.5);
+            padding: 10px 24px;
+            border-radius: 40px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(100, 180, 255, 0.25);
+            color: white;
+            font-size: 0.75rem;
+            transition: opacity 0.3s;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+            order: 3;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        @media (max-width: 1200px) {
+            .control-group {
+                left: 20px;
+            }
+            #sidebar.collapsed ~ .control-group {
+                left: 20px;
+            }
+        }
+
+        @media (max-width: 900px) {
+            #sidebar { width: 280px; }
+            #info-panel { width: 280px; }
+            .control-group { 
+                left: 20px; 
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+            .btn-group {
+                flex-wrap: wrap;
+                justify-content: flex-start;
+                border-radius: 28px;
+                gap: 3px;
+            }
+            .btn {
+                padding: 6px 14px; 
+                font-size: 0.75rem; 
+            }
+            .btn-icon {
+                padding: 6px 10px;
+                min-width: 32px;
+            }
+            #status-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            #legend {
+                gap: 12px;
+                padding: 8px 20px;
+            }
+        }
+        @media (max-width: 600px) {
+            .control-group {
+                left: 15px;
+                top: 110px;
+            }
+            #sidebar.collapsed ~ .control-group {
+                left: 15px;
+            }
+            .btn {
+                padding: 6px 12px;
+                font-size: 0.7rem;
+            }
+            .btn-icon {
+                padding: 6px 10px;
+                min-width: 30px;
+            }
+            #legend {
+                gap: 8px;
+                padding: 6px 16px;
+                font-size: 0.7rem;
+            }
+            .legend-item {
+                gap: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h1>ThreeEarth · 全球环境态势感知平台</h1>
+        <p>地震监测 · 山火预警 · 空气质量分析 · 全球热点新闻</p>
+        <div class="time-info">
+            <span id="current-time">2026-04-08 12:00:00</span>
+            <span id="last-update">上次更新: 2026-04-08 11:55:00</span>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loading">📡 正在加载实时数据...</div>
+
+    <div class="control-group">
+        <div class="btn-group">
+            <button class="btn btn-icon" id="toggle-quake" title="地震图层">🌊</button>
+            <button class="btn btn-icon" id="toggle-fire" title="山火图层">🔥</button>
+            <button class="btn btn-icon" id="toggle-aqi" title="空气质量图层">💨</button>
+        </div>
+        <div class="btn-group">
+            <button class="btn" id="toggle-legend" title="显示/隐藏图例">📋 图例</button>
+            <button class="btn btn-primary" id="refresh-all" title="刷新数据">🔄 刷新</button>
+        </div>
+    </div>
+
+    <div id="status-bar">
+        <div id="data-sources">
+            📊 USGS · NASA FIRMS · WAQI · 新闻流
+        </div>
+        <div id="data-stats">
+            <span id="quake-count">地震: 0</span>
+            <span id="fire-count">山火: 0</span>
+            <span id="aqi-count">空气质量: 0</span>
+            <span id="news-count">新闻: 0</span>
+        </div>
+        <div id="legend">
+            <div class="legend-item"><span class="legend-dot" style="background: #ff4444; box-shadow:0 0 10px #ff4444;"></span> 新闻</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #ffaa00; box-shadow:0 0 10px #ffaa00;"></span> 地震</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #ff6600; box-shadow:0 0 15px #ff6600;"></span> 山火</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #00cc66; box-shadow:0 0 8px #00cc66;"></span> 空气优</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #ff4444; box-shadow:0 0 8px #ff4444;"></span> 空气差</div>
+        </div>
+    </div>
+
+    <!-- 详情面板 -->
+    <div id="info-panel" class="collapsed">
+        <div class="panel-header" id="panel-toggle-btn">
+            <div class="panel-header-left">
+                <span id="panel-icon">📍</span>
+                <h3 id="panel-title">点击地图元素查看详情</h3>
+            </div>
+            <button class="panel-toggle" id="panel-toggle">▲</button>
+        </div>
+        <div class="panel-body">
+            <div id="panel-content">
+                点击地球上的彩色标记，查看地震、山火、新闻或空气质量详情。
+            </div>
+        </div>
+        <div class="panel-footer">
+            <div class="panel-meta">
+                <span id="panel-location"></span>
+                <span id="panel-source"></span>
+            </div>
+            <a id="panel-link" href="#" target="_blank">🔗 查看详情</a>
+        </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <div id="sidebar" class="collapsed">
+        <div class="sidebar-header" id="sidebar-toggle-btn">
+            <div class="sidebar-header-left">
+                <span>📊</span>
+                <h2>实时监控面板</h2>
+                <span class="badge">LIVE</span>
+            </div>
+            <button class="sidebar-toggle" id="sidebar-toggle">▶</button>
+        </div>
+        <div class="sidebar-content">
+            <div class="section">
+                <div class="section-title"><span>🌊 最新地震 (USGS)</span></div>
+                <div id="quake-list"><div style="color:#aaa; text-align:center; padding:10px;">加载中...</div></div>
+            </div>
+
+            <div class="section">
+                <div class="section-title"><span>🔥 活跃山火 (NASA FIRMS)</span></div>
+                <div id="fire-list"><div style="color:#aaa; text-align:center; padding:10px;">加载中...</div></div>
+            </div>
+
+            <div class="section">
+                <div class="section-title"><span>💨 主要城市空气质量 (WAQI)</span></div>
+                <div class="aqi-stats" id="aqi-stats">
+                    <div class="aqi-card" data-city="beijing"><div class="aqi-value">--</div><div class="aqi-label">北京</div></div>
+                    <div class="aqi-card" data-city="shanghai"><div class="aqi-value">--</div><div class="aqi-label">上海</div></div>
+                    <div class="aqi-card" data-city="guangzhou"><div class="aqi-value">--</div><div class="aqi-label">广州</div></div>
+                    <div class="aqi-card" data-city="tokyo"><div class="aqi-value">--</div><div class="aqi-label">东京</div></div>
+                    <div class="aqi-card" data-city="seoul"><div class="aqi-value">--</div><div class="aqi-label">首尔</div></div>
+                    <div class="aqi-card" data-city="singapore"><div class="aqi-value">--</div><div class="aqi-label">新加坡</div></div>
+                    <div class="aqi-card" data-city="delhi"><div class="aqi-value">--</div><div class="aqi-label">德里</div></div>
+                    <div class="aqi-card" data-city="mumbai"><div class="aqi-value">--</div><div class="aqi-label">孟买</div></div>
+                    <div class="aqi-card" data-city="jakarta"><div class="aqi-value">--</div><div class="aqi-label">雅加达</div></div>
+                    <div class="aqi-card" data-city="bangkok"><div class="aqi-value">--</div><div class="aqi-label">曼谷</div></div>
+                    <div class="aqi-card" data-city="osaka"><div class="aqi-value">--</div><div class="aqi-label">大阪</div></div>
+                    <div class="aqi-card" data-city="hanoi"><div class="aqi-value">--</div><div class="aqi-label">河内</div></div>
+                    <div class="aqi-card" data-city="london"><div class="aqi-value">--</div><div class="aqi-label">伦敦</div></div>
+                    <div class="aqi-card" data-city="paris"><div class="aqi-value">--</div><div class="aqi-label">巴黎</div></div>
+                    <div class="aqi-card" data-city="berlin"><div class="aqi-value">--</div><div class="aqi-label">柏林</div></div>
+                    <div class="aqi-card" data-city="amsterdam"><div class="aqi-value">--</div><div class="aqi-label">阿姆斯特丹</div></div>
+                    <div class="aqi-card" data-city="madrid"><div class="aqi-value">--</div><div class="aqi-label">马德里</div></div>
+                    <div class="aqi-card" data-city="brussels"><div class="aqi-value">--</div><div class="aqi-label">布鲁塞尔</div></div>
+                    <div class="aqi-card" data-city="warsaw"><div class="aqi-value">--</div><div class="aqi-label">华沙</div></div>
+                    <div class="aqi-card" data-city="new-york"><div class="aqi-value">--</div><div class="aqi-label">纽约</div></div>
+                    <div class="aqi-card" data-city="los-angeles"><div class="aqi-value">--</div><div class="aqi-label">洛杉矶</div></div>
+                    <div class="aqi-card" data-city="toronto"><div class="aqi-value">--</div><div class="aqi-label">多伦多</div></div>
+                    <div class="aqi-card" data-city="vancouver"><div class="aqi-value">--</div><div class="aqi-label">温哥华</div></div>
+                    <div class="aqi-card" data-city="mexico-city"><div class="aqi-value">--</div><div class="aqi-label">墨西哥城</div></div>
+                    <div class="aqi-card" data-city="buenos-aires"><div class="aqi-value">--</div><div class="aqi-label">布宜诺斯艾利斯</div></div>
+                    <div class="aqi-card" data-city="sao-paulo"><div class="aqi-value">--</div><div class="aqi-label">圣保罗</div></div>
+                    <div class="aqi-card" data-city="santiago"><div class="aqi-value">--</div><div class="aqi-label">圣地亚哥</div></div>
+                    <div class="aqi-card" data-city="cairo"><div class="aqi-value">--</div><div class="aqi-label">开罗</div></div>
+                    <div class="aqi-card" data-city="lagos"><div class="aqi-value">--</div><div class="aqi-label">拉各斯</div></div>
+                    <div class="aqi-card" data-city="nairobi"><div class="aqi-value">--</div><div class="aqi-label">内罗毕</div></div>
+                    <div class="aqi-card" data-city="johannesburg"><div class="aqi-value">--</div><div class="aqi-label">约翰内斯堡</div></div>
+                    <div class="aqi-card" data-city="sydney"><div class="aqi-value">--</div><div class="aqi-label">悉尼</div></div>
+                    <div class="aqi-card" data-city="melbourne"><div class="aqi-value">--</div><div class="aqi-label">墨尔本</div></div>
+                    <div class="aqi-card" data-city="auckland"><div class="aqi-value">--</div><div class="aqi-label">奥克兰</div></div>
+                    <div class="aqi-card" data-city="perth"><div class="aqi-value">--</div><div class="aqi-label">珀斯</div></div>
+                    <div class="aqi-card" data-city="wellington"><div class="aqi-value">--</div><div class="aqi-label">惠灵顿</div></div>
+                    <div class="aqi-card" data-city="dubai"><div class="aqi-value">--</div><div class="aqi-label">迪拜</div></div>
+                    <div class="aqi-card" data-city="riyadh"><div class="aqi-value">--</div><div class="aqi-label">利雅得</div></div>
+                    <div class="aqi-card" data-city="tehran"><div class="aqi-value">--</div><div class="aqi-label">德黑兰</div></div>
+                    <div class="aqi-card" data-city="istanbul"><div class="aqi-value">--</div><div class="aqi-label">伊斯坦布尔</div></div>
+                    <div class="aqi-card" data-city="helsinki"><div class="aqi-value">--</div><div class="aqi-label">赫尔辛基</div></div>
+                    <div class="aqi-card" data-city="copenhagen"><div class="aqi-value">--</div><div class="aqi-label">哥本哈根</div></div>
+                    <div class="aqi-card" data-city="reykjavik"><div class="aqi-value">--</div><div class="aqi-label">雷克雅未克</div></div>
+                    <div class="aqi-card" data-city="almaty"><div class="aqi-value">--</div><div class="aqi-label">阿拉木图</div></div>
+                    <div class="aqi-card" data-city="tashkent"><div class="aqi-value">--</div><div class="aqi-label">塔什干</div></div>
+                    <div class="aqi-card" data-city="santo-domingo"><div class="aqi-value">--</div><div class="aqi-label">圣多明各</div></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title"><span>📰 全球新闻流</span></div>
+                <div class="news-tags" id="news-tags">
+                    <button class="news-tag-btn active" data-tag="all">全部</button>
+                    <button class="news-tag-btn" data-tag="气候">气候</button>
+                    <button class="news-tag-btn" data-tag="地震">地震</button>
+                    <button class="news-tag-btn" data-tag="能源">能源</button>
+                    <button class="news-tag-btn" data-tag="公共卫生">公共卫生</button>
+                    <button class="news-tag-btn" data-tag="经济">经济</button>
+                    <button class="news-tag-btn" data-tag="科技">科技</button>
+                </div>
+                <div id="news-list-sidebar"><div style="color:#aaa; text-align:center; padding:10px;">加载中...</div></div>
+            </div>
+
+            <div style="padding:12px 16px; font-size:0.65rem; color:rgba(255,255,255,0.3); text-align:right;">
+                数据每5分钟自动刷新
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        
+        // --- 初始化(与之前相同，省略部分重复代码) ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050510);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 2, 12);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+        
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+        
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.4;
+        controls.enableZoom = true;
+        controls.minDistance = 5;
+        controls.maxDistance = 20;
+        
+        // 光照、星空、地球(与之前相同，为节省篇幅略去)
+        scene.add(new THREE.AmbientLight(0x404060, 0.45));
+        const dirLight1 = new THREE.DirectionalLight(0xffeedd, 1.2);
+        dirLight1.position.set(5, 10, 7);
+        scene.add(dirLight1);
+        const dirLight2 = new THREE.DirectionalLight(0x99ccff, 0.5);
+        dirLight2.position.set(-5, 0, 5);
+        scene.add(dirLight2);
+        
+        const starsGeo = new THREE.BufferGeometry();
+        const starsPos = new Float32Array(4000 * 3);
+        for (let i = 0; i < 4000 * 3; i+=3) {
+            const r = 180 + Math.random() * 120;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random()*2)-1);
+            starsPos[i] = Math.sin(phi)*Math.cos(theta)*r;
+            starsPos[i+1] = Math.sin(phi)*Math.sin(theta)*r;
+            starsPos[i+2] = Math.cos(phi)*r;
+        }
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
+        scene.add(new THREE.Points(starsGeo, new THREE.PointsMaterial({color: 0xffffff, size: 0.12})));
+        
+        const earthGroup = new THREE.Group();
+        const loader = new THREE.TextureLoader();
+        const earthMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(3, 64, 64),
+            new THREE.MeshPhongMaterial({
+                map: loader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg'),
+                specularMap: loader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg'),
+                specular: new THREE.Color('grey'),
+                shininess: 10,
+                normalMap: loader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg')
+            })
+        );
+        earthGroup.add(earthMesh);
+        
+        const cloudMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(3.005, 64, 64),
+            new THREE.MeshPhongMaterial({
+                map: loader.load('https://threejs.org/examples/textures/planets/earth_clouds_1024.png'),
+                transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending
+            })
+        );
+        earthGroup.add(cloudMesh);
+        scene.add(earthGroup);
+        
+        const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(3.3, 0.006, 16, 200),
+            new THREE.MeshStandardMaterial({ color: 0x3388ff, emissive: 0x224466, transparent: true, opacity: 0.2 })
+        );
+        ring.rotation.x = Math.PI/2;
+        scene.add(ring);
+        
+        // 图层
+        const layers = {
+            news: new THREE.Group(),
+            quake: new THREE.Group(),
+            fire: new THREE.Group(),
+            aqi: new THREE.Group()
+        };
+        Object.values(layers).forEach(g => scene.add(g));
+        
+        function latLonToPos(lat, lon, r = 3.12) {
+            const phi = (90 - lat) * Math.PI / 180;
+            const theta = lon * Math.PI / 180;
+            return new THREE.Vector3(r * Math.sin(phi) * Math.cos(theta), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(theta));
+        }
+        
+        const interactiveObjects = [];
+        
+        // 更新详情面板
+        function updatePanel(data) {
+            const icon = document.getElementById('panel-icon');
+            const title = document.getElementById('panel-title');
+            const content = document.getElementById('panel-content');
+            const location = document.getElementById('panel-location');
+            const source = document.getElementById('panel-source');
+            const link = document.getElementById('panel-link');
+
+            document.getElementById('info-panel').classList.remove('collapsed');
+            document.getElementById('panel-toggle').textContent = '▼';
+
+            if (data.type === 'news') {
+                icon.textContent = '📰';
+                title.textContent = data.title || '新闻';
+                content.innerHTML = `<strong>分类:</strong> ${data.tag || '综合'}<br><strong>摘要:</strong> ${data.desc || ''}<br><span style="opacity:0.75;">以下为演练新闻，用于界面展示。</span>`;
+                location.textContent = `📍 ${data.city || ''}`;
+                source.textContent = data.source || '';
+                link.href = data.url || '#';
+                link.style.display = 'inline-block';
+            } else if (data.type === 'quake') {
+                icon.textContent = '🌊';
+                title.textContent = `M${data.mag} 地震`;
+                content.innerHTML = `地点: ${data.place}<br>震级: M${data.mag}<br>深度: ${data.depth} km<br>时间: ${new Date(data.time).toLocaleString()}`;
+                location.textContent = `📍 ${data.place}`;
+                source.textContent = 'USGS';
+                link.href = data.url || '#';
+                link.style.display = 'inline-block';
+            } else if (data.type === 'fire') {
+                icon.textContent = '🔥';
+                title.textContent = '山火热点';
+                content.innerHTML = `坐标: ${data.lat.toFixed(2)}, ${data.lon.toFixed(2)}<br>亮度: ${data.brightness}K<br>置信度: ${data.confidence}%<br>时间: ${data.acq_date} ${data.acq_time}`;
+                location.textContent = `📍 ${data.lat.toFixed(2)}, ${data.lon.toFixed(2)}`;
+                source.textContent = 'NASA FIRMS';
+                link.style.display = 'none';
+            } else if (data.type === 'aqi') {
+                icon.textContent = '💨';
+                title.textContent = `${data.city} 空气质量`;
+                const aqi = data.aqi;
+                let level = '优';
+                if (aqi > 50) level = '良';
+                if (aqi > 100) level = '轻度污染';
+                if (aqi > 150) level = '中度污染';
+                if (aqi > 200) level = '重度污染';
+                content.innerHTML = `AQI: ${aqi} (${level})<br>PM2.5: ${data.pm25 || '--'} µg/m³<br>PM10: ${data.pm10 || '--'} µg/m³`;
+                location.textContent = `📍 ${data.city}`;
+                source.textContent = 'WAQI';
+                link.href = data.url || '#';
+                link.style.display = 'inline-block';
+            }
+        }
+
+        async function fetchEarthquakes() {
+            try {
+                const res = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson');
+                const data = await res.json();
+
+                layers.quake.clear();
+                const quakeList = document.getElementById('quake-list');
+                quakeList.innerHTML = '';
+
+                data.features.slice(0, 12).forEach(eq => {
+                    const props = eq.properties;
+                    const coords = eq.geometry.coordinates;
+                    const lon = coords[0], lat = coords[1], depth = coords[2];
+                    const mag = props.mag;
+                    const color = new THREE.Color().setHSL(0.08 - (mag - 2) * 0.03, 1, 0.5);
+
+                    const pos = latLonToPos(lat, lon, 3.14);
+                    const size = 0.08 + mag * 0.03;
+
+                    const sphere = new THREE.Mesh(
+                        new THREE.SphereGeometry(size, 16, 16),
+                        new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.8 })
+                    );
+                    sphere.position.copy(pos);
+                    sphere.userData = { type: 'quake', mag, place: props.place, time: props.time, depth: depth.toFixed(1), url: props.url };
+                    layers.quake.add(sphere);
+                    interactiveObjects.push(sphere);
+
+                    const ringObj = new THREE.Mesh(
+                        new THREE.TorusGeometry(size * 1.8, 0.008, 8, 32),
+                        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5 })
+                    );
+                    ringObj.position.copy(pos);
+                    ringObj.userData = { animation: true };
+                    layers.quake.add(ringObj);
+
+                    const item = document.createElement('div');
+                    item.className = 'quake-item';
+                    item.innerHTML = `
+                        <span class="quake-magnitude" style="color:${color.getStyle()}">M${mag.toFixed(1)}</span>
+                        <span class="quake-location">${props.place.split(',')[0]}</span>
+                        <div class="quake-time">${new Date(props.time).toLocaleString()}</div>
+                    `;
+                    item.onclick = () => updatePanel(sphere.userData);
+                    quakeList.appendChild(item);
+                });
+
+                document.getElementById('quake-count').textContent = `地震: ${data.features.length}`;
+            } catch (e) {
+                console.warn('地震数据加载失败', e);
+            }
+        }
+
+        async function fetchFires() {
+            try {
+                let fires = [];
+                try {
+                    const res = await fetch('https://firms.modaps.eosdis.nasa.gov/api/country/csv/4424992e1d7b9b0a708c6b3c5c8b9c53/VIIRS_NOAA20_NRT/WORLD/1');
+                    const text = await res.text();
+                    const lines = text.trim().split('\n');
+                    for (let i = 1; i < Math.min(lines.length, 25); i++) {
+                        const parts = lines[i].split(',');
+                        if (parts.length >= 8) {
+                            fires.push({
+                                lat: parseFloat(parts[1]),
+                                lon: parseFloat(parts[2]),
+                                brightness: parseFloat(parts[3]),
+                                confidence: parts[6],
+                                acq_date: parts[7],
+                                acq_time: parts[8]
+                            });
+                        }
+                    }
+                } catch (apiError) {
+                    console.warn('山火API调用失败，使用后备数据', apiError);
+                    fires = generateMockFires();
+                }
+
+                if (fires.length === 0) fires = generateMockFires();
+
+                layers.fire.clear();
+                const fireList = document.getElementById('fire-list');
+                fireList.innerHTML = '';
+
+                fires.forEach(f => {
+                    const pos = latLonToPos(f.lat, f.lon, 3.13);
+                    const intensity = Math.min(1, f.brightness / 400);
+                    const sphere = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.1 + intensity * 0.08, 12, 12),
+                        new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: new THREE.Color(1, 0.3 + intensity * 0.5, 0), emissiveIntensity: 1.2 })
+                    );
+                    sphere.position.copy(pos);
+                    sphere.userData = { type: 'fire', ...f };
+                    layers.fire.add(sphere);
+                    interactiveObjects.push(sphere);
+
+                    const item = document.createElement('div');
+                    item.className = 'fire-item';
+                    item.innerHTML = `<span class="fire-brightness">🔥 ${f.brightness.toFixed(0)}K</span> (${f.lat.toFixed(2)}, ${f.lon.toFixed(2)})`;
+                    item.onclick = () => updatePanel(sphere.userData);
+                    fireList.appendChild(item);
+                });
+
+                document.getElementById('fire-count').textContent = `山火: ${fires.length}`;
+            } catch (e) {
+                console.warn('山火数据加载失败', e);
+            }
+        }
+
+        function generateMockFires() {
+            const fireLocations = [
+                { lat: 35.8617, lon: 104.1954, name: 'Lanzhou', country: 'China' },
+                { lat: 31.2304, lon: 121.4737, name: 'Shanghai', country: 'China' },
+                { lat: 35.6762, lon: 139.6503, name: 'Tokyo', country: 'Japan' },
+                { lat: 28.6139, lon: 77.2090, name: 'Delhi', country: 'India' },
+                { lat: 51.5074, lon: -0.1278, name: 'London', country: 'UK' },
+                { lat: 34.0522, lon: -118.2437, name: 'Los Angeles', country: 'USA' },
+                { lat: -23.5505, lon: -46.6333, name: 'Sao Paulo', country: 'Brazil' },
+                { lat: 30.0444, lon: 31.2357, name: 'Cairo', country: 'Egypt' },
+                { lat: -33.8688, lon: 151.2093, name: 'Sydney', country: 'Australia' }
+            ];
+
+            const fires = [];
+            const dateString = new Date().toISOString().split('T')[0];
+            fireLocations.forEach(location => {
+                const fireCount = Math.floor(Math.random() * 3) + 1;
+                for (let i = 0; i < fireCount; i++) {
+                    fires.push({
+                        lat: location.lat + (Math.random() - 0.5) * 2,
+                        lon: location.lon + (Math.random() - 0.5) * 2,
+                        brightness: 300 + Math.random() * 100,
+                        confidence: 'high',
+                        acq_date: dateString,
+                        acq_time: `${Math.floor(Math.random() * 24)}${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
+                        name: location.name,
+                        country: location.country
+                    });
+                }
+            });
+            return fires;
+        }
+
+        async function fetchAQI() {
+            const cities = [
+                { name: '北京', id: 'beijing', country: '中国', baseAqi: 85, variation: 20 },
+                { name: '上海', id: 'shanghai', country: '中国', baseAqi: 75, variation: 15 },
+                { name: '广州', id: 'guangzhou', country: '中国', baseAqi: 70, variation: 10 },
+                { name: '东京', id: 'tokyo', country: '日本', baseAqi: 30, variation: 8 },
+                { name: '大阪', id: 'osaka', country: '日本', baseAqi: 35, variation: 10 },
+                { name: '首尔', id: 'seoul', country: '韩国', baseAqi: 45, variation: 12 },
+                { name: '新加坡', id: 'singapore', country: '新加坡', baseAqi: 25, variation: 8 },
+                { name: '德里', id: 'delhi', country: '印度', baseAqi: 150, variation: 30 },
+                { name: '孟买', id: 'mumbai', country: '印度', baseAqi: 120, variation: 25 },
+                { name: '雅加达', id: 'jakarta', country: '印度尼西亚', baseAqi: 100, variation: 25 },
+                { name: '曼谷', id: 'bangkok', country: '泰国', baseAqi: 95, variation: 20 },
+                { name: '河内', id: 'hanoi', country: '越南', baseAqi: 60, variation: 15 },
+                { name: '伦敦', id: 'london', country: '英国', baseAqi: 40, variation: 10 },
+                { name: '巴黎', id: 'paris', country: '法国', baseAqi: 45, variation: 10 },
+                { name: '柏林', id: 'berlin', country: '德国', baseAqi: 35, variation: 8 },
+                { name: '阿姆斯特丹', id: 'amsterdam', country: '荷兰', baseAqi: 38, variation: 10 },
+                { name: '马德里', id: 'madrid', country: '西班牙', baseAqi: 48, variation: 12 },
+                { name: '布鲁塞尔', id: 'brussels', country: '比利时', baseAqi: 42, variation: 10 },
+                { name: '华沙', id: 'warsaw', country: '波兰', baseAqi: 45, variation: 12 },
+                { name: '纽约', id: 'new-york', country: '美国', baseAqi: 50, variation: 10 },
+                { name: '洛杉矶', id: 'los-angeles', country: '美国', baseAqi: 60, variation: 25 },
+                { name: '波士顿', id: 'boston', country: '美国', baseAqi: 42, variation: 10 },
+                { name: '旧金山', id: 'san-francisco', country: '美国', baseAqi: 38, variation: 10 },
+                { name: '墨西哥城', id: 'mexico-city', country: '墨西哥', baseAqi: 100, variation: 25 },
+                { name: '多伦多', id: 'toronto', country: '加拿大', baseAqi: 38, variation: 10 },
+                { name: '温哥华', id: 'vancouver', country: '加拿大', baseAqi: 28, variation: 8 },
+                { name: '圣保罗', id: 'sao-paulo', country: '巴西', baseAqi: 70, variation: 20 },
+                { name: '里约热内卢', id: 'rio-de-janeiro', country: '巴西', baseAqi: 65, variation: 15 },
+                { name: '开罗', id: 'cairo', country: '埃及', baseAqi: 80, variation: 20 },
+                { name: '拉各斯', id: 'lagos', country: '尼日利亚', baseAqi: 95, variation: 25 },
+                { name: '内罗毕', id: 'nairobi', country: '肯尼亚', baseAqi: 70, variation: 18 },
+                { name: '约翰内斯堡', id: 'johannesburg', country: '南非', baseAqi: 60, variation: 15 },
+                { name: '开普敦', id: 'cape-town', country: '南非', baseAqi: 32, variation: 10 },
+                { name: '卡萨布兰卡', id: 'casablanca', country: '摩洛哥', baseAqi: 55, variation: 12 },
+                { name: '悉尼', id: 'sydney', country: '澳大利亚', baseAqi: 20, variation: 5 },
+                { name: '墨尔本', id: 'melbourne', country: '澳大利亚', baseAqi: 22, variation: 6 },
+                { name: '珀斯', id: 'perth', country: '澳大利亚', baseAqi: 19, variation: 5 },
+                { name: '奥克兰', id: 'auckland', country: '新西兰', baseAqi: 15, variation: 4 },
+                { name: '惠灵顿', id: 'wellington', country: '新西兰', baseAqi: 14, variation: 4 },
+                { name: '迪拜', id: 'dubai', country: '阿联酋', baseAqi: 40, variation: 10 },
+                { name: '利雅得', id: 'riyadh', country: '沙特阿拉伯', baseAqi: 70, variation: 20 },
+                { name: '德黑兰', id: 'tehran', country: '伊朗', baseAqi: 110, variation: 25 },
+                { name: '伊斯坦布尔', id: 'istanbul', country: '土耳其', baseAqi: 55, variation: 15 },
+                { name: '赫尔辛基', id: 'helsinki', country: '芬兰', baseAqi: 20, variation: 5 },
+                { name: '哥本哈根', id: 'copenhagen', country: '丹麦', baseAqi: 28, variation: 6 },
+                { name: '雷克雅未克', id: 'reykjavik', country: '冰岛', baseAqi: 12, variation: 4 },
+                { name: '阿拉木图', id: 'almaty', country: '哈萨克斯坦', baseAqi: 65, variation: 18 },
+                { name: '塔什干', id: 'tashkent', country: '乌兹别克斯坦', baseAqi: 80, variation: 20 },
+                { name: '圣多明各', id: 'santo-domingo', country: '多米尼加共和国', baseAqi: 48, variation: 12 }
+            ];
+
+            layers.aqi.clear();
+            let aqiCount = 0;
+
+            for (const city of cities) {
+                const aqi = Math.max(0, Math.min(500, city.baseAqi + Math.floor(Math.random() * (city.variation * 2)) - city.variation));
+                const coords = getCityCoordinates(city.id);
+                if (!coords) continue;
+
+                let color = 0x00cc66;
+                if (aqi > 50) color = 0xffdd00;
+                if (aqi > 100) color = 0xff8800;
+                if (aqi > 150) color = 0xff4444;
+                if (aqi > 200) color = 0x990000;
+
+                const pos = latLonToPos(coords[0], coords[1], 3.15);
+                const sphere = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.15 + aqi / 500, 16, 16),
+                    new THREE.MeshPhongMaterial({ color, transparent: true, opacity: 0.35 })
+                );
+                sphere.position.copy(pos);
+                sphere.userData = { type: 'aqi', city: city.name, aqi, country: city.country, url: `https://aqicn.org/city/${city.id}` };
+                layers.aqi.add(sphere);
+                interactiveObjects.push(sphere);
+
+                const aqiCard = document.querySelector(`.aqi-card[data-city="${city.id}"] .aqi-value`);
+                if (aqiCard) {
+                    aqiCard.textContent = aqi;
+                    aqiCard.style.color = `#${color.toString(16).padStart(6, '0')}`;
+                }
+
+                aqiCount++;
+            }
+
+            document.getElementById('aqi-count').textContent = `空气质量: ${aqiCount}`;
+        }
+
+        function getCityCoordinates(cityId) {
+            const coordinates = {
+                // 亚洲
+                'beijing': [39.9042, 116.4074],
+                'shanghai': [31.2304, 121.4737],
+                'guangzhou': [23.1291, 113.2644],
+                'shenzhen': [22.5431, 114.0579],
+                'chengdu': [30.5728, 104.0668],
+                'tokyo': [35.6762, 139.6503],
+                'osaka': [34.6937, 135.5023],
+                'seoul': [37.5665, 126.9780],
+                'singapore': [1.3521, 103.8198],
+                'delhi': [28.6139, 77.2090],
+                'mumbai': [19.0760, 72.8777],
+                'kolkata': [22.5726, 88.3639],
+                'bangkok': [13.7563, 100.5018],
+                'kuala-lumpur': [3.1390, 101.6869],
+                'jakarta': [-6.2088, 106.8456],
+                'hanoi': [21.0278, 105.8342],
+                'dubai': [25.2048, 55.2708],
+                'tehran': [35.6892, 51.3890],
+                'riyadh': [24.7136, 46.6753],
+                
+                // 欧洲
+                'london': [51.5074, -0.1278],
+                'paris': [48.8566, 2.3522],
+                'berlin': [52.5200, 13.4050],
+                'rome': [41.9028, 12.4964],
+                'madrid': [40.4168, -3.7038],
+                'moscow': [55.7558, 37.6173],
+                'st-petersburg': [59.9343, 30.3351],
+                'vienna': [48.2082, 16.3738],
+                'amsterdam': [52.3676, 4.9041],
+                'stockholm': [59.3293, 18.0686],
+                'helsinki': [60.1699, 24.9384],
+                'copenhagen': [55.6761, 12.5683],
+                'paris': [48.8566, 2.3522],
+                'seoul': [37.5665, 126.9780],
+                'osaka': [34.6937, 135.5023],
+                'mumbai': [19.0760, 72.8777],
+                'vancouver': [49.2827, -123.1207],
+                'brussels': [50.8503, 4.3517],
+                'warsaw': [52.2297, 21.0122],
+
+                // 北美洲
+                'new-york': [40.7128, -74.0060],
+                'los-angeles': [34.0522, -118.2437],
+                'chicago': [41.8781, -87.6298],
+                'houston': [29.7604, -95.3698],
+                'miami': [25.7617, -80.1918],
+                'seattle': [47.6062, -122.3321],
+                'toronto': [43.6532, -79.3832],
+                'montreal': [45.5017, -73.5673],
+                'mexico-city': [19.4326, -99.1332],
+
+                // 南美洲
+                'sao-paulo': [-23.5505, -46.6333],
+                'rio-de-janeiro': [-22.9068, -43.1729],
+                'buenos-aires': [-34.6037, -58.3816],
+                'santiago': [-33.4489, -70.6693],
+                'lima': [-12.0464, -77.0428],
+                'bogota': [4.7110, -74.0721],
+
+                // 非洲
+                'cairo': [30.0444, 31.2357],
+                'johannesburg': [-26.2041, 28.0473],
+                'lagos': [6.5244, 3.3792],
+                'nairobi': [-1.2921, 36.8219],
+                'algiers': [36.7525, 3.0420],
+
+                // 大洋洲
+                'sydney': [-33.8688, 151.2093],
+                'melbourne': [-37.8136, 144.9631],
+                'brisbane': [-27.4698, 153.0251],
+                'auckland': [-36.8485, 174.7633],
+                'perth': [-31.9505, 115.8605],
+                'wellington': [-41.2866, 174.7756],
+                'istanbul': [41.0082, 28.9784],
+                'reykjavik': [64.1466, -21.9426],
+                'almaty': [43.2220, 76.8512],
+                'tashkent': [41.2995, 69.2401],
+                'santo-domingo': [18.4861, -69.9312]
+            };
+            return coordinates[cityId] || null;
+        }
+        
+        let activeNewsTag = 'all';
+
+        function loadMockNews() {
+            const news = [
+                { city: '北京', lat: 39.90, lon: 116.40, title: '华北出现强对流天气预警升级', desc: '多地发布雷暴与短时强降雨预警，交通与户外活动受到影响。', source: '新闻池 · 气象公报结构', color: 0x44dd88, country: '中国', tag: '气候', url: 'https://www.wmo.int/' },
+                { city: '上海', lat: 31.23, lon: 121.47, title: '长三角港口群维持高位运行', desc: '集装箱调度和航线衔接效率保持稳定。', source: '新闻池 · 港口物流简报', color: 0x33ccff, country: '中国', tag: '经济', url: 'https://unctad.org/' },
+                { city: '东京', lat: 35.69, lon: 139.69, title: '近海地震后铁路短时限速巡检', desc: '震后基础设施按应急流程排查，城市交通逐步恢复。', source: '新闻池 · 地震速报结构', color: 0xffaa00, country: '日本', tag: '地震', url: 'https://www.usgs.gov/' },
+                { city: '大阪', lat: 34.69, lon: 135.50, title: '关西制造业升级计划推进', desc: '中小工厂自动化与能效改造进入第二阶段。', source: '新闻池 · 制造业简报', color: 0x33ccff, country: '日本', tag: '科技', url: 'https://www.oecd.org/' },
+                { city: '首尔', lat: 37.56, lon: 126.97, title: '东亚芯片供应链发布季度展望', desc: '报告预计下季度高端制造产能利用率继续维持高位。', source: '新闻池 · 产业快讯结构', color: 0x33ccff, country: '韩国', tag: '科技', url: 'https://www.oecd.org/' },
+                { city: '新加坡', lat: 1.35, lon: 103.82, title: '区域港口推进绿色航运走廊试点', desc: '多港联合测试低碳燃料补给与数字化调度方案。', source: '新闻池 · 航运通告结构', color: 0x44dd88, country: '新加坡', tag: '能源', url: 'https://www.imo.org/' },
+                { city: '德里', lat: 28.61, lon: 77.21, title: '高温季公共卫生响应级别上调', desc: '医院启动热相关疾病分级接诊，社区开放临时避暑点。', source: '新闻池 · 卫生简报结构', color: 0xff4444, country: '印度', tag: '公共卫生', url: 'https://www.who.int/' },
+                { city: '孟买', lat: 19.08, lon: 72.88, title: '金融与港口协同提升城市韧性', desc: '港区、机场与城区调度系统完成联动演练。', source: '新闻池 · 城市治理简报', color: 0x33ccff, country: '印度', tag: '经济', url: 'https://www.worldbank.org/' },
+                { city: '雅加达', lat: -6.21, lon: 106.85, title: '沿海城市排水系统进入汛前联调', desc: '重点河段完成清淤与泵站压力测试，降低内涝风险。', source: '新闻池 · 城市治理通告', color: 0x44dd88, country: '印度尼西亚', tag: '气候', url: 'https://www.unhabitat.org/' },
+                { city: '曼谷', lat: 13.75, lon: 100.50, title: '湄南河流域防洪闸门进入联调', desc: '区域水位监测与城市排涝系统同步测试。', source: '新闻池 · 水文简报', color: 0x44dd88, country: '泰国', tag: '气候', url: 'https://www.wmo.int/' },
+                { city: '河内', lat: 21.03, lon: 105.85, title: '区域制造业出口订单保持增长', desc: '电子与纺织供应链延续扩张趋势。', source: '新闻池 · 经济简报', color: 0x33ccff, country: '越南', tag: '经济', url: 'https://www.worldbank.org/' },
+                { city: '伦敦', lat: 51.51, lon: -0.13, title: '欧洲多国电网灵活性交易量上升', desc: '储能与需求侧响应参与度提高，峰谷价差收窄。', source: '新闻池 · 能源市场摘要', color: 0x33ccff, country: '英国', tag: '能源', url: 'https://www.iea.org/' },
+                { city: '巴黎', lat: 48.85, lon: 2.35, title: '城市低排放区扩容进入实施阶段', desc: '核心区新增交通排放约束，公共交通运力同步提升。', source: '新闻池 · 城市政策快讯', color: 0x44dd88, country: '法国', tag: '气候', url: 'https://www.unep.org/' },
+                { city: '柏林', lat: 52.52, lon: 13.40, title: '工业数字化改造项目公布新清单', desc: '重点支持中小制造企业自动化升级与能效监测。', source: '新闻池 · 经贸公报结构', color: 0x33ccff, country: '德国', tag: '经济', url: 'https://www.worldbank.org/' },
+                { city: '马德里', lat: 40.42, lon: -3.70, title: '太阳能并网容量刷新季度纪录', desc: '电网调峰和储能部署同步提升，日间峰值更稳定。', source: '新闻池 · 可再生能源简报', color: 0x44dd88, country: '西班牙', tag: '能源', url: 'https://www.iea.org/' },
+                { city: '阿姆斯特丹', lat: 52.37, lon: 4.90, title: '港口航运数字化调度进入扩展阶段', desc: '多式联运与岸电设施协同升级。', source: '新闻池 · 港航科技简报', color: 0x33ccff, country: '荷兰', tag: '科技', url: 'https://www.imo.org/' },
+                { city: '纽约', lat: 40.71, lon: -74.01, title: '沿海风暴演练覆盖多州应急系统', desc: '演练重点测试跨州预警联动与避险转运能力。', source: '新闻池 · 应急管理通报', color: 0xff4444, country: '美国', tag: '气候', url: 'https://www.noaa.gov/' },
+                { city: '洛杉矶', lat: 34.05, lon: -118.24, title: '城市消防带扩大至山麓社区', desc: '重点区域完成植被清理与疏散路线更新。', source: '新闻池 · 灾防演练简报', color: 0xff4444, country: '美国', tag: '气候', url: 'https://www.usgs.gov/' },
+                { city: '波士顿', lat: 42.36, lon: -71.06, title: '港口岸电改造项目进入收尾', desc: '新接口将减少靠港船舶排放并优化燃料使用。', source: '新闻池 · 港航绿色化简报', color: 0x33ccff, country: '美国', tag: '能源', url: 'https://www.epa.gov/' },
+                { city: '旧金山', lat: 37.77, lon: -122.42, title: '海湾地区地震韧性加固工程推进', desc: '桥梁和地铁节点完成最新一轮抗震评估。', source: '新闻池 · 地震韧性通告', color: 0xffaa00, country: '美国', tag: '地震', url: 'https://www.usgs.gov/' },
+                { city: '多伦多', lat: 43.65, lon: -79.38, title: '北美城市热浪应对预案升级', desc: '避暑中心扩容，户外工地执行分时作业。', source: '新闻池 · 卫生与气候联合简报', color: 0xff4444, country: '加拿大', tag: '公共卫生', url: 'https://www.canada.ca/' },
+                { city: '墨西哥城', lat: 19.43, lon: -99.13, title: '高海拔城区空气质量联防机制启动', desc: '跨区共享监测站数据，优化重污染天气响应。', source: '新闻池 · 环保通报结构', color: 0xffaa00, country: '墨西哥', tag: '公共卫生', url: 'https://www.who.int/' },
+                { city: '圣保罗', lat: -23.55, lon: -46.63, title: '雨林火点监测周报显示局地波动', desc: '卫星监测与地面巡护联合复核，重点区域加强巡检。', source: '新闻池 · 遥感简报结构', color: 0xffaa00, country: '巴西', tag: '气候', url: 'https://firms.modaps.eosdis.nasa.gov/' },
+                { city: '里约热内卢', lat: -22.91, lon: -43.17, title: '海岸防洪工程通过阶段验收', desc: '城市滨海段新增泵站与挡浪设施已投入试运行。', source: '新闻池 · 城市基础设施简报', color: 0x33ccff, country: '巴西', tag: '气候', url: 'https://www.worldbank.org/' },
+                { city: '布宜诺斯艾利斯', lat: -34.60, lon: -58.38, title: '粮食港口物流恢复常态化运行', desc: '主要港区周转效率回升，出口排队时间缩短。', source: '新闻池 · 贸易物流周报', color: 0x33ccff, country: '阿根廷', tag: '经济', url: 'https://unctad.org/' },
+                { city: '圣地亚哥', lat: -33.45, lon: -70.67, title: '安第斯山区地震监测网完成升级', desc: '新增高灵敏台站，提升微震识别精度。', source: '新闻池 · 监测中心公报', color: 0xffaa00, country: '智利', tag: '地震', url: 'https://www.usgs.gov/' },
+                { city: '利马', lat: -12.05, lon: -77.04, title: '沿岸渔港发布异常浪高风险提示', desc: '渔业管理部门建议小型船只调整出海时段。', source: '新闻池 · 海洋预警简报', color: 0x44dd88, country: '秘鲁', tag: '气候', url: 'https://www.noaa.gov/' },
+                { city: '波哥大', lat: 4.71, lon: -74.07, title: '城市公交电动化比例再创新高', desc: '新增充电场站投入运营，通勤高峰保障能力增强。', source: '新闻池 · 交通简报结构', color: 0x33ccff, country: '哥伦比亚', tag: '能源', url: 'https://www.iea.org/' },
+                { city: '基多', lat: -0.18, lon: -78.47, title: '高原城市水源保护项目启动', desc: '上游流域和城市供水系统同步纳入监测。', source: '新闻池 · 水资源通报', color: 0x44dd88, country: '厄瓜多尔', tag: '气候', url: 'https://www.unesco.org/' },
+                { city: '蒙得维的亚', lat: -34.90, lon: -56.16, title: '港区物流与冷链升级方案获批', desc: '面向农产品出口的冷链设施将扩容。', source: '新闻池 · 港口经济简报', color: 0x33ccff, country: '乌拉圭', tag: '经济', url: 'https://unctad.org/' },
+                { city: '开罗', lat: 30.04, lon: 31.24, title: '高温季饮用水调配方案进入执行', desc: '重点城区提升供水调峰能力，保障医院与学校需求。', source: '新闻池 · 民生通告结构', color: 0xff4444, country: '埃及', tag: '公共卫生', url: 'https://www.who.int/' },
+                { city: '约翰内斯堡', lat: -26.20, lon: 28.04, title: '区域电力检修计划发布月度窗口', desc: '配网侧分区检修，关键医院和枢纽供电优先保障。', source: '新闻池 · 电力公司通告', color: 0x33ccff, country: '南非', tag: '能源', url: 'https://www.iea.org/' },
+                { city: '开普敦', lat: -33.92, lon: 18.42, title: '海岸城市海平面监测网加密', desc: '新增潮位站和风暴潮预警联动机制。', source: '新闻池 · 海岸适应简报', color: 0x44dd88, country: '南非', tag: '气候', url: 'https://www.ipcc.ch/' },
+                { city: '亚的斯亚贝巴', lat: 8.98, lon: 38.76, title: '东非公共卫生实验室网络扩容', desc: '跨国样本转运和报告标准实现统一。', source: '新闻池 · 卫生协作公报', color: 0xff4444, country: '埃塞俄比亚', tag: '公共卫生', url: 'https://www.afro.who.int/' },
+                { city: '卡萨布兰卡', lat: 33.57, lon: -7.59, title: '地中海港口风浪预警系统完成升级', desc: '自动化风控规则已接入港区调度系统。', source: '新闻池 · 海事通知结构', color: 0x44dd88, country: '摩洛哥', tag: '气候', url: 'https://www.imo.org/' },
+                { city: '拉各斯', lat: 6.52, lon: 3.38, title: '沿海洪涝应急仓储物资完成预置', desc: '重点社区部署移动泵车与应急医疗包。', source: '新闻池 · 减灾工作简报', color: 0xff4444, country: '尼日利亚', tag: '气候', url: 'https://www.undrr.org/' },
+                { city: '内罗毕', lat: -1.29, lon: 36.82, title: '东非跨境疾病监测平台扩容', desc: '实验室报告接口统一，通报时效进一步缩短。', source: '新闻池 · 卫生协作公报', color: 0xff4444, country: '肯尼亚', tag: '公共卫生', url: 'https://www.afro.who.int/' },
+                { city: '阿尔及尔', lat: 36.75, lon: 3.04, title: '地中海沿岸港区防风浪标准上调', desc: '多港同步更新防护规范，提升极端天气应对能力。', source: '新闻池 · 海事通知结构', color: 0x44dd88, country: '阿尔及利亚', tag: '气候', url: 'https://www.imo.org/' },
+                { city: '悉尼', lat: -33.87, lon: 151.21, title: '电池储能项目并网规模扩大', desc: '州级电网引入新储能集群，增强高峰调节能力。', source: '新闻池 · 电力市场公告', color: 0x33ccff, country: '澳大利亚', tag: '能源', url: 'https://www.aemo.com.au/' },
+                { city: '墨尔本', lat: -37.81, lon: 144.96, title: '南半球科研联盟发布海洋观测计划', desc: '沿海浮标与卫星数据将共享到区域研究节点。', source: '新闻池 · 科研协作通报', color: 0x33ccff, country: '澳大利亚', tag: '科技', url: 'https://www.csiro.au/' },
+                { city: '珀斯', lat: -31.95, lon: 115.86, title: '西澳矿区运输通道进入雨季预案', desc: '重点路段完成边坡巡检与应急备车部署。', source: '新闻池 · 物流与气候简报', color: 0xffaa00, country: '澳大利亚', tag: '气候', url: 'https://www.australia.gov.au/' },
+                { city: '奥克兰', lat: -36.85, lon: 174.76, title: '海岸地震演练覆盖学校与社区', desc: '演练纳入疏散路径复核和应急通信测试。', source: '新闻池 · 减灾演练公报', color: 0xffaa00, country: '新西兰', tag: '地震', url: 'https://www.geonet.org.nz/' },
+                { city: '惠灵顿', lat: -41.29, lon: 174.78, title: '新西兰首都推进城市防灾通信升级', desc: '应急广播、海啸提示和社区联络机制同步测试。', source: '新闻池 · 防灾演练通报', color: 0x44dd88, country: '新西兰', tag: '地震', url: 'https://www.geonet.org.nz/' },
+                { city: '苏瓦', lat: -18.14, lon: 178.44, title: '太平洋岛国气候适应基金获新承诺', desc: '资金将用于海岸防护、供水韧性与预警系统。', source: '新闻池 · 区域合作简报', color: 0x44dd88, country: '斐济', tag: '气候', url: 'https://www.unfccc.int/' },
+                { city: '迪拜', lat: 25.20, lon: 55.27, title: '海湾城市智慧港口调度扩容', desc: '自动泊位和货运分流系统将进一步优化跨境物流。', source: '新闻池 · 港口科技简报', color: 0x33ccff, country: '阿联酋', tag: '科技', url: 'https://www.imo.org/' },
+                { city: '利雅得', lat: 24.71, lon: 46.67, title: '沙特新能源园区新增储能装机', desc: '大规模电池储能将支持沙漠地区峰时供电。', source: '新闻池 · 能源转型简报', color: 0x44dd88, country: '沙特阿拉伯', tag: '能源', url: 'https://www.iea.org/' },
+                { city: '德黑兰', lat: 35.69, lon: 51.39, title: '高原城市调水与防旱联动升级', desc: '重点水库和地下水监测进入日频响应。', source: '新闻池 · 水资源简报', color: 0xffaa00, country: '伊朗', tag: '气候', url: 'https://www.unesco.org/' },
+                { city: '伊斯坦布尔', lat: 41.01, lon: 28.98, title: '博斯普鲁斯海峡通航调度保持高效', desc: '跨海交通与港区装卸协同进入新流程。', source: '新闻池 · 航运通告结构', color: 0x33ccff, country: '土耳其', tag: '经济', url: 'https://unctad.org/' },
+                { city: '赫尔辛基', lat: 60.17, lon: 24.94, title: '北欧城市低碳供热网络扩大', desc: '热泵与区域供热协同减少冬季排放。', source: '新闻池 · 气候政策简报', color: 0x44dd88, country: '芬兰', tag: '气候', url: 'https://www.iea.org/' },
+                { city: '哥本哈根', lat: 55.68, lon: 12.57, title: '丹麦海岸风电维护窗口进入旺季', desc: '运维船队与海上风机监测系统同步升级。', source: '新闻池 · 可再生能源通报', color: 0x33ccff, country: '丹麦', tag: '能源', url: 'https://www.iea.org/' },
+                { city: '雷克雅未克', lat: 64.15, lon: -21.94, title: '冰岛地热供暖进入新扩容周期', desc: '首都区更多建筑将接入地热网络。', source: '新闻池 · 地热能源简报', color: 0x44dd88, country: '冰岛', tag: '能源', url: 'https://www.iea.org/' },
+                { city: '阿拉木图', lat: 43.22, lon: 76.85, title: '中亚交通走廊推进数字口岸试点', desc: '货运车辆通关和轨道运输衔接进一步提速。', source: '新闻池 · 区域物流简报', color: 0x33ccff, country: '哈萨克斯坦', tag: '经济', url: 'https://unctad.org/' },
+                { city: '塔什干', lat: 41.30, lon: 69.24, title: '中亚水资源协作机制更新路线图', desc: '跨境河流监测与灌溉调度进入联合阶段。', source: '新闻池 · 水资源合作简报', color: 0x44dd88, country: '乌兹别克斯坦', tag: '气候', url: 'https://www.unesco.org/' },
+                { city: '圣多明各', lat: 18.49, lon: -69.93, title: '加勒比海岛国群启动飓风预案演练', desc: '港口、机场与应急通信系统完成联动测试。', source: '新闻池 · 防灾演练通报', color: 0xff4444, country: '多米尼加共和国', tag: '气候', url: 'https://www.undrr.org/' }
+            ];
+            
+            const newsList = document.getElementById('news-list-sidebar');
+            newsList.innerHTML = '';
+            
+            news.forEach(item => {
+                const pos = latLonToPos(item.lat, item.lon, 3.12);
+                const sphere = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.1, 16, 16),
+                    new THREE.MeshStandardMaterial({ color: item.color, emissive: item.color, emissiveIntensity: 1.0 })
+                );
+                sphere.position.copy(pos);
+                sphere.userData = { type: 'news', ...item };
+                layers.news.add(sphere);
+                interactiveObjects.push(sphere);
+                
+                const div = document.createElement('div');
+                div.textContent = item.city;
+                div.style.cssText = `color:#e0e8ff; font-size:10px; background:rgba(10,20,40,0.6); padding:2px 8px; border-radius:12px; border:1px solid #${item.color.toString(16)}; pointer-events:none;`;
+                const label = new CSS2DObject(div);
+                label.position.copy(pos.clone().multiplyScalar(1.08));
+                layers.news.add(label);
+                
+                const li = document.createElement('div');
+                li.className = 'news-item-sidebar';
+                li.innerHTML = `<span style="color:#${item.color.toString(16)}">●</span> <span class="news-tag-chip">${item.tag}</span>${item.title} <span class="news-country">(${item.country})</span>`;
+                li.onclick = () => updatePanel(sphere.userData);
+                newsList.appendChild(li);
+            });
+            
+            // 更新新闻统计
+            document.getElementById('news-count').textContent = `新闻: ${news.length}`;
+
+            // 标签筛选仅影响侧栏列表，不影响地球点位显示
+            const tagButtons = document.querySelectorAll('#news-tags .news-tag-btn');
+            tagButtons.forEach(btn => {
+                btn.onclick = () => {
+                    activeNewsTag = btn.dataset.tag || 'all';
+                    tagButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    const items = newsList.querySelectorAll('.news-item-sidebar');
+                    items.forEach((node, idx) => {
+                        const match = activeNewsTag === 'all' || news[idx].tag === activeNewsTag;
+                        node.style.display = match ? 'block' : 'none';
+                    });
+                };
+            });
+        }
+        
+        async function loadAllData() {
+            document.getElementById('loading').style.opacity = '1';
+            layers.news.clear();
+            interactiveObjects.length = 0;
+            
+            loadMockNews();
+            await Promise.all([fetchEarthquakes(), fetchFires(), fetchAQI()]);
+            
+            updateLastUpdate();
+            document.getElementById('loading').style.opacity = '0';
+        }
+        
+        loadAllData();
+        
+        // --- 收起/展开功能 ---
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+        
+        // 同步初始收起状态对应的箭头方向
+        sidebarToggle.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
+        
+        sidebarToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle('collapsed');
+            sidebarToggle.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
+        });
+        
+        sidebarToggleBtn.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                sidebar.classList.toggle('collapsed');
+                sidebarToggle.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
+            }
+        });
+        
+        const infoPanel = document.getElementById('info-panel');
+        const panelToggle = document.getElementById('panel-toggle');
+        const panelToggleBtn = document.getElementById('panel-toggle-btn');
+        panelToggle.textContent = infoPanel.classList.contains('collapsed') ? '▲' : '▼';
+        
+        panelToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            infoPanel.classList.toggle('collapsed');
+            panelToggle.textContent = infoPanel.classList.contains('collapsed') ? '▲' : '▼';
+        });
+        
+        panelToggleBtn.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                infoPanel.classList.toggle('collapsed');
+                panelToggle.textContent = infoPanel.classList.contains('collapsed') ? '▲' : '▼';
+            }
+        });
+        
+        // 图例
+        const legend = document.getElementById('legend');
+        document.getElementById('toggle-legend').addEventListener('click', () => {
+            legend.style.opacity = legend.style.opacity === '0' ? '1' : '0';
+        });
+        
+        // 图层
+        document.getElementById('toggle-quake').addEventListener('click', () => {
+            layers.quake.visible = !layers.quake.visible;
+        });
+        document.getElementById('toggle-fire').addEventListener('click', () => {
+            layers.fire.visible = !layers.fire.visible;
+        });
+        document.getElementById('toggle-aqi').addEventListener('click', () => {
+            layers.aqi.visible = !layers.aqi.visible;
+        });
+        document.getElementById('refresh-all').addEventListener('click', loadAllData);
+        
+        // AQI卡片点击
+        document.querySelectorAll('.aqi-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const cityId = card.dataset.city;
+                const obj = interactiveObjects.find(o => o.userData?.type === 'aqi' && o.userData?.city);
+                if (obj) updatePanel(obj.userData);
+            });
+        });
+        
+        // 交互
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        renderer.domElement.style.cursor = 'pointer';
+        
+        window.addEventListener('click', (e) => {
+            mouse.x = (e.clientX / renderer.domElement.clientWidth) * 2 - 1;
+            mouse.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(interactiveObjects);
+            if (intersects.length > 0) {
+                updatePanel(intersects[0].object.userData);
+            }
+        });
+        
+        // 动画
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            if (cloudMesh) cloudMesh.rotation.y += 0.0008;
+            ring.rotation.z += 0.001;
+            
+            // 检查并更新所有标记的可见性
+            updateMarkersVisibility();
+            
+            layers.fire.children.forEach(child => {
+                if (child.userData?.pulse) {
+                    const scale = 1 + Math.sin(performance.now() * 0.008) * 0.15;
+                    child.scale.set(scale, scale, scale);
+                }
+            });
+            
+            layers.quake.children.forEach(child => {
+                if (child.userData?.animation) {
+                    child.rotation.y += 0.02;
+                    child.rotation.x += 0.01;
+                }
+            });
+            
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        // 更新标记的可见性，确保只有地球正面的标记会显示
+        function updateMarkersVisibility() {
+            const cameraPosition = camera.position;
+            
+            // 检查所有图层中的标记
+            Object.values(layers).forEach(layer => {
+                layer.children.forEach(child => {
+                    // 计算标记到相机的向量
+                    const markerToCamera = new THREE.Vector3().subVectors(cameraPosition, child.position);
+                    // 计算标记到地球中心的向量
+                    const markerToEarthCenter = new THREE.Vector3().subVectors(new THREE.Vector3(0, 0, 0), child.position);
+                    
+                    // 计算两个向量的点积
+                    const dotProduct = markerToCamera.dot(markerToEarthCenter);
+                    
+                    // 如果点积为正，说明标记在地球的背面，应该隐藏
+                    // 如果点积为负，说明标记在地球的正面，应该显示
+                    child.visible = dotProduct < 0;
+                });
+            });
+        }
+        animate();
+        
+        // 更新时间显示
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('current-time').textContent = timeString;
+        }
+        
+        // 更新最后数据更新时间
+        function updateLastUpdate() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            document.getElementById('last-update').textContent = `上次更新: ${timeString}`;
+        }
+        
+        // 初始化时间显示
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+
+        
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
+
