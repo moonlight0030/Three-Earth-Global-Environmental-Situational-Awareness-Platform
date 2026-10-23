@@ -90,6 +90,9 @@ python -m http.server 8000
 - **图例按钮**：显示/隐藏底部图例
 
 ---
+ **🚀 在线体验：[点击这里访问 3D 地球在线演示](https://moonlight0030.github.io/Three-Earth-Global-Environmental-Situational-Awareness-Platform/Three%20earth.html)**
+
+---
 
 ## ⚠️ 声明与版权 (Disclaimer & Copyright)
 
